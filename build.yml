@@ -1,0 +1,29 @@
+---
+- name: Deploy PHP Web Application
+  hosts: Kslave1 # Replace with the name of your target host/group
+  become: yes  # Use sudo to become root (or another privileged user)
+
+  tasks:
+    - name: Clone Git repository
+      git:
+        repo: https://github.com/edureka-devops/projCert.git # Replace with your Git repository URL
+        dest: /opt/my-php-app  # Destination directory for the code
+      become_user: edureka-devops  # Replace with your Git username
+      become_method: su
+
+    - name: Build Docker container
+      docker_image:
+        name: my-php-app
+        build:
+          path: /opt/my-php-app
+          dockerfile: /opt/my-php-app/Dockerfile
+      become_user: dhinesh221  # Replace with your desired Docker user
+
+    - name: Run Docker container
+      docker_container:
+        name: my-php-container
+        image: my-php-app
+        state: started
+        ports:
+          - "80:80"  # Map host port 80 to container port 80
+      become_user: dhinesh221  # Replace with your desired Docker user

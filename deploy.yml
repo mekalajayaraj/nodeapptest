@@ -1,0 +1,80 @@
+---
+- name: Install Docker on Slave Node
+  hosts: slave
+  become: yes  # Use sudo to become root (or another privileged user)
+
+  tasks:
+    - name: Update apt package cache (for Ubuntu/Debian)
+      apt:
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Install required packages for Docker (for Ubuntu/Debian)
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gnupg
+        - lsb-release
+      when: ansible_os_family == "Debian"
+
+    - name: Add Docker GPG key (for Ubuntu/Debian)
+      apt_key:
+        url: https://download.docker.com/linux/{{ item }}/gpg
+        state: present
+      loop:
+        - "{{ ansible_distribution | lower }}"
+      when: ansible_os_family == "Debian"
+
+    - name: Add Docker APT repository (for Ubuntu/Debian)
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/{{ item }} {{ ansible_distribution_release }} stable"
+        state: present
+      loop:
+        - "{{ ansible_distribution | lower }}"
+      when: ansible_os_family == "Debian"
+
+    - name: Install Docker
+      apt:
+        name: docker-ce
+        state: present
+      when: ansible_os_family == "Debian"
+
+    # Alternatively, for CentOS/RHEL, use the following tasks:
+
+    - name: Install required packages for Docker (for CentOS/RHEL)
+      yum:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - yum-utils
+        - device-mapper-persistent-data
+        - lvm2
+
+    - name: Add Docker repository (for CentOS/RHEL)
+      yum_repository:
+        name: docker-ce
+        baseurl: https://download.docker.com/linux/centos/7/$basearch/stable
+        gpgcheck: yes
+        enabled: yes
+        gpgkey: https://download.docker.com/linux/centos/gpg
+      when: ansible_os_family == "RedHat"
+
+    - name: Install Docker
+      yum:
+        name: docker-ce
+        state: present
+      when: ansible_os_family == "RedHat"
+
+    - name: Start Docker service
+      service:
+        name: docker
+        state: started
+
+    - name: Enable Docker service at boot
+      service:
+        name: docker
+        enabled: yes
